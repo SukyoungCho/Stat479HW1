@@ -1,0 +1,55 @@
+---
+title: "Bridges_Markdown"
+author: "Sukyoung Cho"
+date: '2020 2 7 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+### Load packages we need
+
+```{r}
+library(readr)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(ggrepel)
+```
+
+## Read the data
+```{r}
+df17 = read_csv("2017hwybronlyonefile.zip")
+df18 = read_csv("2018hwybronefiledel.zip")
+```
+
+## Merge two data into one data table
+```{r}
+bridges = rbind(df17,df18)
+```
+
+## One line code that process the data and draw the plot
+
+```{r}
+bridges %>% transmute(bridgeID = paste(RECORD_TYPE_005A,ROUTE_PREFIX_005B,SERVICE_LEVEL_005C,ROUTE_NUMBER_005D,DIRECTION_005E,  sep =""),
+                      FIPS = paste(STATE_CODE_001, COUNTY_CODE_003, sep=""),
+                      Deck=DECK_COND_058,
+                      Super.S=SUPERSTRUCTURE_COND_059,
+                      Sub.S=SUBSTRUCTURE_COND_060,
+                      Channel=CHANNEL_COND_061,
+                      ADT = ADT_029,
+                      Total_Imp_Cost=TOTAL_IMP_COST_096,
+                      ADT.Truck=PERCENT_ADT_TRUCK_109,
+                      National = NATIONAL_NETWORK_110) %>%
+  filter(Super.S != "N" & Deck != "N" & Sub.S != "N" & Channel != "N") %>% 
+  mutate(Overall.Cond = (as.integer(Deck) + as.integer(Super.S) + as.integer(Sub.S) + as.integer(Channel)) / 4) %>% 
+  na.omit(bridges) %>% 
+  ggplot(mapping = aes(x = ADT.Truck, y = Overall.Cond)) +
+  geom_point(aes(size = ADT), alpha = 1/3) +
+  geom_point(aes(color = National)) +
+  geom_smooth(se = FALSE)
+
+```
